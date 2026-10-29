@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Motivation</title>
+<meta name="theme-color" content="#060d24">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+:root{
+  --bg:#060d24; --bg2:#0b1738; --ring:#16254f; --accent:#8fb4ff; --text:#e8eefc; --muted:#7f90b8;
+  --font:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  --ui:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:radial-gradient(120% 80% at 50% 0%,var(--bg2),var(--bg) 70%);color:var(--text);font-family:var(--ui);
+  padding:env(safe-area-inset-top) 20px env(safe-area-inset-bottom);display:flex;flex-direction:column;align-items:center;overflow-x:hidden}
+main{width:100%;max-width:420px;padding:20px 0 32px;display:flex;flex-direction:column;align-items:center;gap:22px}
+h1{font-family:var(--font);font-weight:400;font-size:1.1rem;letter-spacing:.12em;color:var(--muted)}
+.dial{position:relative;width:min(80vw,320px);aspect-ratio:1}
+.dial svg.ring{width:100%;height:100%;transform:rotate(-90deg)}
+.dial circle{fill:none;stroke-width:6}
+.track{stroke:var(--ring)}
+.prog{stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset .4s linear}
+.center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.logo{width:34%;filter:drop-shadow(0 0 14px rgba(143,180,255,.45))}
+.time{font-variant-numeric:tabular-nums;font-size:2.4rem;font-weight:300;letter-spacing:.03em}
+.quote{min-height:6.5em;font-family:var(--font);font-size:1.3rem;line-height:1.5;text-align:center;opacity:.12;transition:opacity 1.5s ease}
+.set{width:100%;display:flex;flex-direction:column;gap:8px}
+.set label{display:flex;justify-content:space-between;color:var(--muted);font-size:.9rem}
+.set output{color:var(--text)}
+input[type=range]{width:100%;accent-color:var(--accent);height:32px}
+.btns{display:flex;gap:12px;width:100%}
+button{font:inherit;border:1px solid var(--ring);background:transparent;color:var(--text);padding:14px;border-radius:999px;cursor:pointer;flex:1}
+button.main{background:var(--accent);color:var(--bg);border-color:var(--accent);font-weight:600}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+details{width:100%;border-top:1px solid var(--ring);padding-top:14px}
+summary{cursor:pointer;color:var(--muted)}
+.add{display:flex;gap:8px;margin:14px 0}
+.add input{flex:1;min-width:0;background:var(--bg2);border:1px solid var(--ring);color:var(--text);padding:12px 14px;border-radius:12px;font:inherit}
+.add button{flex:0 0 auto;padding:12px 18px}
+ul{list-style:none;padding:0;display:flex;flex-direction:column;gap:8px}
+li{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;font-size:.92rem;color:var(--text);padding:10px 12px;background:var(--bg2);border-radius:12px}
+li button{flex:0 0 auto;padding:2px 10px;font-size:1rem;color:var(--muted)}
+.empty{color:var(--muted);font-size:.9rem}
+@media(prefers-reduced-motion:reduce){.prog,.quote{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <h1>MOTIVATION</h1>
+
+  <div class="dial">
+    <svg class="ring" viewBox="0 0 220 220" aria-hidden="true">
+      <circle class="track" cx="110" cy="110" r="102"/>
+      <circle class="prog" id="prog" cx="110" cy="110" r="102"/>
+    </svg>
+    <div class="center">
+      <svg class="logo" viewBox="0 0 100 100" fill="none" stroke="#8fb4ff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" aria-label="Yukarı yönlü zikzaklı ok">
+        <path d="M16 80 L36 52 L50 68 L78 28"/><path d="M60 26 L81 23 L77 44"/>
+      </svg>
+      <div class="time" id="time" role="timer">25:00</div>
+    </div>
+  </div>
+
+  <p class="quote" id="quote" aria-live="off"></p>
+
+  <div class="set">
+    <label for="len">Çalışma süresi <output id="lenOut">25 dk</output></label>
+    <input type="range" id="len" min="1" max="180" step="1" value="25">
+  </div>
+
+  <div class="btns">
+    <button class="main" id="start">Başlat</button>
+    <button id="reset">Sıfırla</button>
+  </div>
+
+  <details>
+    <summary>Kendi sözlerim</summary>
+    <form class="add" id="addForm">
+      <input id="newQ" placeholder="Bir söz yaz…" maxlength="160" autocomplete="off" aria-label="Yeni söz">
+      <button type="submit">Ekle</button>
+    </form>
+    <ul id="list"></ul>
+  </details>
+</main>
+
+<script>
+const DEFAULTS = [
+  "Küçük adımlar, büyük yolların başlangıcıdır.",
+  "Bugün yaptığın çalışma, yarının özgüvenidir.",
+  "Başlamak, bitirmenin yarısıdır.",
+  "Odaklan. Şu an yalnızca bu sayfa var.",
+  "Yorgunluk geçer, öğrendiğin kalır.",
+  "Her tekrar seni hedefe biraz daha yaklaştırır.",
+  "Mükemmel olmak zorunda değilsin, devam etmek yeterli."
+];
+const $ = id => document.getElementById(id);
+const C = 2 * Math.PI * 102;
+const prog = $('prog'); prog.style.strokeDasharray = C;
+
+let custom = [];
+try { custom = JSON.parse(localStorage.getItem('mot.quotes') || '[]'); } catch(e) {}
+const saveQ = () => { try { localStorage.setItem('mot.quotes', JSON.stringify(custom)); } catch(e) {} };
+
+let total = 25*60, remaining = total, endAt = 0, tick = null, running = false, quoteIdx = 0, lastQuoteSlot = -1;
+
+const fmt = s => {
+  const h = Math.floor(s/3600), m = Math.floor(s%3600/60), sec = s%60;
+  const p = n => String(n).padStart(2,'0');
+  return (h ? h+':' : '') + p(m) + ':' + p(sec);
+};
+const allQuotes = () => DEFAULTS.concat(custom);
+
+function render(){
+  const progress = 1 - remaining/total;
+  $('time').textContent = fmt(Math.max(0, Math.ceil(remaining)));
+  prog.style.strokeDashoffset = C * progress;
+  // söz opaklığı: süre ilerledikçe 0.12 -> 1
+  const q = $('quote');
+  q.style.opacity = (0.12 + 0.88 * progress).toFixed(3);
+  // her ~60 sn'de (veya oturumun 1/8'inde) yeni söz
+  const slot = Math.floor((total - remaining) / Math.max(30, Math.min(60, total/8)));
+  if (slot !== lastQuoteSlot){
+    lastQuoteSlot = slot;
+    const list = allQuotes();
+    q.textContent = list[quoteIdx++ % list.length];
+  }
+}
+
+/* Ekran uyanık kalsın (Wake Lock) */
+let wakeLock = null;
+async function acquireLock(){
+  try{
+    if ('wakeLock' in navigator && !wakeLock){
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    }
+  }catch(e){ wakeLock = null; }
+}
+function releaseLock(){
+  try{ if (wakeLock) wakeLock.release(); }catch(e){}
+  wakeLock = null;
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && running) acquireLock();
+});
+
+/* Bitiş sesi (dosyasız, Web Audio ile) */
+let audioCtx = null;
+function unlockAudio(){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }catch(e){}
+}
+function playChime(){
+  if (!audioCtx) return;
+  const notes = [523.25, 659.25, 783.99, 1046.5]; // Do-Mi-Sol-Do
+  notes.forEach((f, i) => {
+    const t = audioCtx.currentTime + i * 0.28;
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.25, t + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(t); o.stop(t + 1);
+  });
+}
+
+function loop(){
+  remaining = Math.max(0, (endAt - Date.now())/1000);
+  render();
+  if (remaining <= 0) finish();
+}
+function start(){
+  if (running){ // duraklat
+    clearInterval(tick); running = false; releaseLock(); $('start').textContent = 'Devam et'; return;
+  }
+  if (remaining <= 0) reset();
+  unlockAudio(); acquireLock();
+  endAt = Date.now() + remaining*1000;
+  running = true; $('start').textContent = 'Duraklat'; $('len').disabled = true;
+  tick = setInterval(loop, 250); loop();
+  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+}
+function reset(){
+  clearInterval(tick); running = false; releaseLock();
+  total = remaining = $('len').value * 60;
+  lastQuoteSlot = -1; quoteIdx = Math.floor(Math.random()*allQuotes().length);
+  $('start').textContent = 'Başlat'; $('len').disabled = false;
+  render();
+}
+function finish(){
+  clearInterval(tick); running = false; releaseLock(); playChime(); $('len').disabled = false; $('start').textContent = 'Yeniden başlat';
+  if (navigator.vibrate) navigator.vibrate([300,150,300]);
+  if ('Notification' in window && Notification.permission === 'granted')
+    new Notification('Motivation', { body: 'Süre doldu. Harika iş çıkardın!', icon: 'icon.svg' });
+}
+
+$('len').addEventListener('input', e => {
+  const m = +e.target.value;
+  $('lenOut').textContent = m >= 60 ? Math.floor(m/60)+' sa '+(m%60 ? m%60+' dk' : '') : m+' dk';
+  if (!running){ total = remaining = m*60; lastQuoteSlot = -1; render(); }
+});
+$('start').onclick = start;
+$('reset').onclick = reset;
+
+function renderList(){
+  const ul = $('list'); ul.innerHTML = '';
+  if (!custom.length){ ul.innerHTML = '<li class="empty">Henüz kendi sözün yok. Yukarıdan bir tane ekle.</li>'; return; }
+  custom.forEach((t,i) => {
+    const li = document.createElement('li');
+    const sp = document.createElement('span'); sp.textContent = t;
+    const b = document.createElement('button'); b.textContent = '×'; b.setAttribute('aria-label','Sözü sil');
+    b.onclick = () => { custom.splice(i,1); saveQ(); renderList(); };
+    li.append(sp,b); ul.append(li);
+  });
+}
+$('addForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = $('newQ').value.trim(); if (!v) return;
+  custom.push(v); saveQ(); $('newQ').value = ''; renderList();
+});
+
+renderList(); reset();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
